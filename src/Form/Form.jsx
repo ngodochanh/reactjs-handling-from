@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
-import { LEFT, RIGHT } from './constants/register';
-import { Input } from './components/Input';
+import { LEFT, RIGHT } from './constants';
+import FormField from './FormField';
 
 function FormInfo() {
   const [formData, setFormData] = useState({
@@ -28,55 +28,56 @@ function FormInfo() {
   });
 
   const [isFormValid, setIsFormValid] = useState(false);
-  console.log(errorForm, formData);
 
-  const isRequired = (value, message = 'Vui lòng nhập trường này') => {
-    if (typeof value === 'string') {
-      return value.trim() ? undefined : message;
-    } else {
-      return value ? undefined : message;
-    }
-  };
+  const validators = {
+    required: (value, message = 'Vui lòng nhập trường này') => {
+      if (typeof value === 'string') {
+        return value.trim() ? undefined : message;
+      } else {
+        return value ? undefined : message;
+      }
+    },
 
-  const isEmail = (value, message = 'Trường này là một email') => {
-    // eslint-disable-next-line no-useless-escape
-    const regex = /^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/;
-    return regex.test(value) ? undefined : message;
-  };
+    email: (value, message = 'Trường này là một email') => {
+      const regex = /^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/;
+      return regex.test(value) ? undefined : message;
+    },
 
-  const isMinLength = (value, length, message) => {
-    return value.length >= length ? undefined : message || `Vui lòng nhập ít nhất ${length} ký tự`;
-  };
+    minLength: (value, length, message) => {
+      return value.length >= length ? undefined : message || `Vui lòng nhập ít nhất ${length} ký tự`;
+    },
 
-  const isMatch = (value1, value2, message = 'Mật khẩu không khớp') => {
-    return value1 === value2 ? undefined : message;
-  };
+    match: (value1, value2, message = 'Mật khẩu không khớp') => {
+      return value1 === value2 ? undefined : message;
+    },
 
-  const isSelected = (value, message = 'Vui lòng chọn ít nhất một trường') => {
-    return value.length > 0 ? undefined : message;
+    isSelected: (value, message = 'Vui lòng chọn ít nhất một trường') => {
+      return value.length > 0 ? undefined : message;
+    },
   };
 
   const validateField = (name, value) => {
-    let errorMessage = isRequired(value);
+    let errorMessage;
 
-    if (name === 'email' && !errorMessage) {
-      errorMessage = isEmail(value);
-    }
-
-    if (name === 'pwd' && !errorMessage) {
-      errorMessage = isMinLength(value, 6);
-    }
-
-    if (name === 'cpwd' && !errorMessage) {
-      errorMessage = isMatch(value, formData.pwd);
-    }
-
-    if (name === 'gender' && !errorMessage) {
-      errorMessage = isRequired(value, 'Vui lòng chọn một trường');
-    }
-
-    if (name === 'languages' && !errorMessage) {
-      errorMessage = isSelected(value);
+    switch (name) {
+      case 'email':
+        errorMessage = validators.required(value) || validators.email(value);
+        break;
+      case 'pwd':
+        errorMessage = validators.required(value) || validators.minLength(value, 6);
+        break;
+      case 'cpwd':
+        errorMessage = validators.required(value) || validators.match(value, formData.pwd);
+        break;
+      case 'gender':
+        errorMessage = validators.required(value, 'Vui lòng chọn một trường');
+        break;
+      case 'languages':
+        errorMessage = validators.isSelected(value);
+        break;
+      default:
+        errorMessage = validators.required(value);
+        break;
     }
 
     return errorMessage;
@@ -112,7 +113,7 @@ function FormInfo() {
       setFormData((prev) => ({ ...prev, [name]: value }));
 
       if (name === 'pwd') {
-        const errorMessage = isMatch(value, formData.cpwd);
+        const errorMessage = validators.match(value, formData.cpwd);
         setErrorForm((prev) => ({ ...prev, cpwd: errorMessage }));
       }
     }
@@ -159,37 +160,18 @@ function FormInfo() {
   }, [errorForm, formData]);
 
   const renderItem = (arr) => {
-    return arr.map((item) => {
-      const { prettier, name } = item;
-      const Component = Input[prettier];
-      const messages = errorForm[name] || '';
-
-      if (prettier === 'Check') {
-        return (
-          <Component
-            key={name}
-            {...item}
-            messages={messages}
-            onCheck={handleCheck}
-            onChange={handleOnChange}
-            onFocus={handleOnFocus}
-            onBlur={handleOnBlur}
-          />
-        );
-      }
-
-      return (
-        <Component
-          key={name}
-          {...item}
-          value={formData[name]}
-          messages={messages}
-          onChange={handleOnChange}
-          onFocus={handleOnFocus}
-          onBlur={handleOnBlur}
-        />
-      );
-    });
+    return arr.map((item) => (
+      <FormField
+        key={item.name}
+        item={item}
+        formData={formData}
+        errorForm={errorForm}
+        handleOnChange={handleOnChange}
+        handleOnBlur={handleOnBlur}
+        handleOnFocus={handleOnFocus}
+        handleCheck={handleCheck}
+      />
+    ));
   };
 
   return (
