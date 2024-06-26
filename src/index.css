@@ -1,0 +1,7 @@
+body {
+  display: flex;
+  height: 100vh;
+  flex-direction: column;
+  justify-content: center;
+  /* background: url('https://wallpapershome.com/images/pages/pic_h/22593.jpg') no-repeat center / cover; */
+}
