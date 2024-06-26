@@ -94,7 +94,7 @@ function FormInfo() {
       let errorMessage = isRequired(formData[key]);
 
       if (key === 'gender') {
-        errorMessage = isRequired(formData[key], 'Vui lòng chọn 1 trường');
+        errorMessage = isRequired(formData[key], 'Vui lòng chọn một trường');
       }
 
       if (key === 'email' && !errorMessage) {
