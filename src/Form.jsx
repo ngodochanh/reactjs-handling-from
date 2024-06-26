@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { LEFT, RIGHT } from './constants/register';
 import { Input } from './components/Input';
 
@@ -15,7 +15,20 @@ function FormInfo() {
     address: '',
   });
 
-  const [errorForm, setErrorForm] = useState({});
+  const [errorForm, setErrorForm] = useState({
+    username: undefined,
+    email: undefined,
+    pwd: undefined,
+    cpwd: undefined,
+    birthday: undefined,
+    occupation: undefined,
+    gender: undefined,
+    languages: undefined,
+    address: undefined,
+  });
+
+  const [isFormValid, setIsFormValid] = useState(false);
+  console.log(errorForm, formData);
 
   const isRequired = (value, message = 'Vui lòng nhập trường này') => {
     if (typeof value === 'string') {
@@ -43,14 +56,7 @@ function FormInfo() {
     return value.length > 0 ? undefined : message;
   };
 
-  const handleOnFocus = (e) => {
-    const { name } = e.target;
-    setErrorForm((prev) => ({ ...prev, [name]: undefined }));
-  };
-
-  const handleOnBlur = (e) => {
-    const { name, value } = e.target;
-
+  const validateField = (name, value) => {
     let errorMessage = isRequired(value);
 
     if (name === 'email' && !errorMessage) {
@@ -65,6 +71,25 @@ function FormInfo() {
       errorMessage = isMatch(value, formData.pwd);
     }
 
+    if (name === 'gender' && !errorMessage) {
+      errorMessage = isRequired(value, 'Vui lòng chọn một trường');
+    }
+
+    if (name === 'languages' && !errorMessage) {
+      errorMessage = isSelected(value);
+    }
+
+    return errorMessage;
+  };
+
+  const handleOnFocus = (e) => {
+    const { name } = e.target;
+    setErrorForm((prev) => ({ ...prev, [name]: undefined }));
+  };
+
+  const handleOnBlur = (e) => {
+    const { name, value } = e.target;
+    const errorMessage = validateField(name, value);
     setErrorForm((prev) => ({ ...prev, [name]: errorMessage }));
   };
 
@@ -85,41 +110,25 @@ function FormInfo() {
       setFormData((prev) => ({ ...prev, languages: updatedLanguages }));
     } else {
       setFormData((prev) => ({ ...prev, [name]: value }));
+
+      if (name === 'pwd') {
+        const errorMessage = isMatch(value, formData.cpwd);
+        setErrorForm((prev) => ({ ...prev, cpwd: errorMessage }));
+      }
     }
   };
 
   const validateForm = () => {
     const errors = {};
+
     Object.keys(formData).forEach((key) => {
-      let errorMessage = isRequired(formData[key]);
-
-      if (key === 'gender') {
-        errorMessage = isRequired(formData[key], 'Vui lòng chọn một trường');
-      }
-
-      if (key === 'email' && !errorMessage) {
-        errorMessage = isEmail(formData[key]);
-      }
-
-      if (key === 'pwd' && !errorMessage) {
-        errorMessage = isMinLength(formData[key], 6);
-      }
-
-      if (key === 'cpwd' && !errorMessage) {
-        errorMessage = isMatch(formData[key], formData.pwd);
-      }
-
-      if (key === 'languages' && !errorMessage) {
-        errorMessage = isSelected(formData[key]);
-      }
-
+      const errorMessage = validateField(key, formData[key]);
       if (errorMessage) {
         errors[key] = errorMessage;
       }
     });
 
     setErrorForm(errors);
-
     return Object.keys(errors).length === 0;
   };
 
@@ -134,6 +143,20 @@ function FormInfo() {
       console.table(errorForm);
     }
   };
+
+  useEffect(() => {
+    const hasErrors = Object.values(errorForm).some((error) => error !== undefined);
+    const hasValidFormData = Object.values(formData).every((value) => {
+      if (typeof value === 'string') {
+        return value.trim() !== '';
+      } else if (Array.isArray(value)) {
+        return value.length > 0;
+      }
+      return true;
+    });
+
+    setIsFormValid(!hasErrors && hasValidFormData);
+  }, [errorForm, formData]);
 
   const renderItem = (arr) => {
     return arr.map((item) => {
@@ -177,7 +200,7 @@ function FormInfo() {
           <div className='col mb-3'>{renderItem(LEFT)}</div>
           <div className='col mb-3'>{renderItem(RIGHT)}</div>
           <div className='mb-3'>
-            <button className='btn btn-primary w-100' type='submit'>
+            <button className='btn btn-primary w-100' type='submit' disabled={!isFormValid}>
               Gửi thông tin
             </button>
           </div>
